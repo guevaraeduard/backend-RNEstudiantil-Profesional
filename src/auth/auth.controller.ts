@@ -1,11 +1,12 @@
-import { Controller, Get, Post, Body,  UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body,  UseGuards, Req, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateUserDto, LoginUserDto } from './dto';
+import { CreateUserDto, LoginUserDto, VerifyEmailDto } from './dto';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from './decorators/get-user.decorator';
 import { User } from './entities/user.entity';
 import { ValidRoles } from './interfaces';
 import { Auth } from './decorators/auth.decorator';
+import { Request } from 'express';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -20,20 +21,38 @@ export class AuthController {
     return this.authService.login(loginUserDto);
   }
 
-  @Get('private')
-  @UseGuards(AuthGuard())
-  testingPrivateRoute(@GetUser() user: User) {
+  @Post('validate-token')
+  @Auth()
+  validateToken(@GetUser() user: User, @Req() req: Request) {
+    const { password, ...userWithoutPassword } = user.toObject();
+    const token = req.headers.authorization?.split(' ')[1];
     return {
-      user
+      user: userWithoutPassword,
+      token
     };
   }
 
-  @Get('private2')
+  @Post('logout')
+  @UseGuards(AuthGuard('jwt'))
+  async logout(@Req() req: any) {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      throw new UnauthorizedException('Token no proporcionado');
+    }
+    await this.authService.logout(token);
+    return { message: 'Sesión cerrada exitosamente' };
+  }
+
+  @Post('send-verification-email')
   @Auth()
-  testingPrivateRoute2(@GetUser() user: User) {
-    return {
-      user
-    };
+  sendVerificationEmail(@GetUser() user: User) {
+    return this.authService.sendVerificationEmail(user);
+  }
+
+  @Post('verify-email')
+  @Auth()
+  verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    return this.authService.verifyEmail(verifyEmailDto.id);
   }
 }
 

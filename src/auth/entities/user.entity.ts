@@ -33,6 +33,12 @@ export class User extends Document {
     address: string;
     @Prop()
     phone: string;
+    @Prop(
+        {
+            default: null
+        }
+    )
+    email_verified_at: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

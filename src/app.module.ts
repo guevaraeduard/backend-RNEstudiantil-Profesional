@@ -7,22 +7,23 @@ import { CommonModule } from './common/common.module';
 import { AuthModule } from './auth/auth.module';
 import { appConfig } from './config/app.config';
 import { JoiValidationSchema } from './config/joi.validation';
+import { EmailsModule } from './emails/emails.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       load: [appConfig],
       validationSchema: JoiValidationSchema,
+      isGlobal: true,
     }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname,'..','public'), 
     }),
 
     MongooseModule.forRoot(process.env.MONGODB),
-
     CommonModule,
-
     AuthModule,
+    EmailsModule,
   ],
 })
 export class AppModule { }
